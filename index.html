@@ -1,0 +1,849 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Product Display Study</title>
+  <style>
+    :root{
+      --gap: 12px;
+      --cardRadius: 14px;
+      --border: 1px solid #e6e6e6;
+      --shadow: 0 6px 18px rgba(0,0,0,.08);
+      --pad: 16px;
+      --bg: #fafafa;
+      --text: #111;
+      --muted: #666;
+      --accent: #111;
+      --good: #0a7a2f;
+      --bad: #b00020;
+    }
+    body{ margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); }
+    header{
+      padding: 14px var(--pad);
+      border-bottom: var(--border);
+      background:#fff;
+      position: sticky; top:0; z-index: 10;
+    }
+    header h1{ margin:0; font-size:16px; }
+    header p{ margin:6px 0 0; color: var(--muted); font-size:13px; }
+
+    .wrap{ padding: var(--pad); max-width: 900px; margin: 0 auto; }
+    .panel{
+      background:#fff; border: var(--border); border-radius: 14px; box-shadow: var(--shadow);
+      padding: 14px; margin-bottom: 14px;
+    }
+    .rowline{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+
+    label{ font-size: 13px; color: var(--muted); display:block; margin-bottom: 6px; }
+    input[type="text"], textarea{
+      font: inherit;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: var(--border);
+      background:#fff;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .field{ min-width: 240px; flex: 1; }
+
+    button{
+      font: inherit;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: var(--border);
+      background:#fff;
+      cursor:pointer;
+    }
+    button.primary{ border:none; background:var(--accent); color:#fff; }
+    button:disabled{ opacity:.5; cursor:not-allowed; }
+
+    .pill{
+      display:inline-flex; gap:8px; align-items:center;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background:#fff;
+      border: var(--border);
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .status{
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.35;
+      white-space: pre-wrap;
+    }
+    .success{ color: var(--good); }
+    .error{ color: var(--bad); }
+    .note{
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: var(--border);
+      background:#fff;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    /* product card */
+    .card{
+      background:#fff;
+      border: var(--border);
+      border-radius: var(--cardRadius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      user-select:none;
+    }
+    .card .img{
+      height: 110px;
+      background: linear-gradient(135deg, #e9e9e9, #f7f7f7);
+      display:flex; align-items:center; justify-content:center;
+      color:#444; font-weight: 700; letter-spacing:.3px;
+    }
+    .card .meta{ padding: 12px; }
+    .card .name{ margin:0; font-size: 14px; }
+    .card .attrs{ margin: 8px 0 0; padding: 0; list-style:none; color: var(--muted); font-size: 12px; }
+    .card .attrs li{ margin: 3px 0; }
+
+    /* Horizontal condition (Netflix-style) */
+    .stimuliRow{
+      display:flex;
+      gap: var(--gap);
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding-bottom: 8px;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: thin;
+    }
+    .stimuliRow::-webkit-scrollbar{ height: 8px; }
+    .stimuliRow::-webkit-scrollbar-thumb{ background: #d6d6d6; border-radius: 999px; }
+    .stimuliRow .card{
+      flex: 0 0 auto;   /* critical: prevents wrapping into vertical */
+      width: 220px;     /* keeps row horizontal even on phones */
+      scroll-snap-align: start;
+      cursor:pointer;
+    }
+
+    /* Vertical condition */
+    .stimuliCol{
+      display:flex;
+      flex-direction: column;
+      gap: var(--gap);
+    }
+    .stimuliCol .card{ width: 100%; cursor:pointer; }
+
+    @media (max-width: 380px){
+      .stimuliRow .card{ width: 200px; } /* still horizontal */
+    }
+
+    /* Likert */
+    .scaleRow{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      padding: 10px;
+      border: var(--border);
+      border-radius: 12px;
+      background:#fff;
+      margin-top: 10px;
+    }
+    .likert{
+      display:grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 6px;
+      align-items:center;
+      margin-top: 6px;
+    }
+    .likert label{
+      margin: 0;
+      font-size: 11px;
+      text-align:center;
+      color: var(--muted);
+    }
+    .likert input{ width: 16px; height: 16px; }
+
+    .codeBox{
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      font-size: 18px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: var(--border);
+      background: #fff;
+      display:inline-block;
+    }
+/* Vertical layout: put label on the left, details on the right */
+.stimuliCol .card{
+  display: grid;
+  grid-template-columns: 84px 1fr; /* left label column, right content */
+  align-items: stretch;
+}
+
+.stimuliCol .card .img{
+  height: auto;                 /* let it stretch with content */
+  min-height: 110px;            /* keeps it visually similar */
+  border-right: var(--border);  /* divider between label and details */
+}
+
+.stimuliCol .card .meta{
+  padding: 12px;
+}
+
+
+
+  </style>
+</head>
+
+<body>
+<header>
+  <h1>Product Display Study</h1>
+  <p>Please complete the task and copy the completion code at the end.</p>
+</header>
+
+<div class="wrap">
+
+  <!-- REPEAT SUBMISSION BLOCK -->
+  <div class="panel" id="repeatBlockPanel" style="display:none;">
+    <div style="font-weight:900;">This device has already submitted</div>
+    <div class="note">
+      Our records indicate this browser/device already completed the study.
+      If you believe this is an error, please return to CloudResearch Connect and contact the researcher.
+    </div>
+    <div class="status" id="repeatStatus"></div>
+  </div>
+
+  <!-- CONSENT -->
+  <div class="panel" id="consentPanel">
+    <div style="font-weight:800; margin-bottom:8px;">Consent</div>
+    <div class="note" style="margin-top:0;">
+      You are invited to participate in a research study about product evaluation. Participation is voluntary.
+      You may stop at any time. Your responses are anonymous (unless you provide identifying information).
+      By checking the box below, you confirm that you are at least 18 years old and consent to participate.
+    </div>
+
+    <div class="rowline" style="margin-top:12px; align-items:center;">
+      <label style="display:flex; gap:10px; align-items:center; margin:0; color:var(--text);">
+        <input type="checkbox" id="consentCheck" />
+        I agree to participate.
+      </label>
+    </div>
+
+    <div class="rowline" style="margin-top:12px;">
+      <div class="field">
+        <label for="pid">Connect ID / Participant ID</label>
+        <input id="pid" type="text" placeholder="Paste your Connect ID (or worker ID)" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label for="deviceNote">Device note (optional)</label>
+        <input id="deviceNote" type="text" placeholder="e.g., iPhone / Chrome" autocomplete="off" />
+      </div>
+      <div class="field" style="min-width:220px;">
+        <button class="primary" id="beginBtn" disabled>Begin</button>
+      </div>
+    </div>
+    <div style="position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden;">
+  <label for="referrer">Referral source (optional)</label>
+  <input id="referrer" type="text" name="referrer" autocomplete="off" tabindex="-1" />
+</div>
+
+    <div class="status" id="consentStatus"></div>
+  </div>
+
+  <!-- STIMULI -->
+  <div class="panel" id="stimuliPanel" style="display:none;">
+    <div class="rowline" style="align-items:center; justify-content:space-between;">
+      <div class="pill" id="instructionPill">Tap one product to choose.</div>
+      <div class="pill" id="choicePill">Choice: —</div>
+    </div>
+    <div style="height:12px;"></div>
+    <div id="stimuliContainer"></div>
+    <div class="status" id="stimuliStatus"></div>
+  </div>
+
+  <!-- QUESTIONS -->
+  <div class="panel" id="surveyPanel" style="display:none;">
+    <div style="font-weight:800;">Questions</div>
+    <div style="font-size:12px; color:var(--muted); margin-top:4px;">1 = Strongly disagree · 7 = Strongly agree</div>
+
+    <div class="scaleRow">
+      <div style="font-size:13px; font-weight:700;">Decision fluency</div>
+
+      <div>
+        <div style="font-size:13px;">It was easy to compare the products.</div>
+        <div class="likert" data-q="fluency_compare"></div>
+      </div>
+
+      <div>
+        <div style="font-size:13px;">The choice felt straightforward.</div>
+        <div class="likert" data-q="fluency_straightforward"></div>
+      </div>
+
+      <div>
+        <div style="font-size:13px;">It was easy to make my choice.</div>
+        <div class="likert" data-q="fluency_quick"></div>
+      </div>
+    </div>
+
+    <div class="scaleRow">
+      <div style="font-size:13px; font-weight:700;">Choice satisfaction</div>
+
+      <div>
+        <div style="font-size:13px;">I am satisfied with the product I chose.</div>
+        <div class="likert" data-q="sat_satisfied"></div>
+      </div>
+
+      <div>
+        <div style="font-size:13px;">I feel confident about my choice.</div>
+        <div class="likert" data-q="sat_confident"></div>
+      </div>
+    </div>
+
+    <!-- Attention check -->
+    <div class="scaleRow">
+      <div style="font-size:13px; font-weight:700;">Attention check</div>
+      <div style="font-size:12px; color:var(--muted);">
+        To show you are paying attention, please select <strong>2</strong> below.
+      </div>
+      <div class="likert" data-q="attn_check"></div>
+      <div class="status" id="attnStatus" style="margin-top:0;"></div>
+    </div>
+
+    <div class="scaleRow">
+      <div style="font-size:13px; font-weight:700;">Optional comment</div>
+      <label for="comment">Anything you’d like to share about how you made your choice?</label>
+      <textarea id="comment" rows="3" placeholder="(optional)"></textarea>
+    </div>
+
+    <div class="rowline" style="margin-top:12px;">
+      <button id="submitBtn" class="primary" disabled>Submit</button>
+      <span class="pill" id="submitPill">Not submitted</span>
+    </div>
+
+    <div class="status" id="submitStatus"></div>
+  </div>
+
+  <!-- COMPLETION -->
+  <div class="panel" id="donePanel" style="display:none;">
+    <div style="font-weight:900;">All done — thank you!</div>
+    <div class="note">
+      Please copy the completion code below and paste it into CloudResearch Connect to receive credit.
+    </div>
+    <div style="margin-top:10px;">
+      <span class="codeBox" id="completionCode">—</span>
+      <button id="copyCodeBtn" style="margin-left:10px;">Copy</button>
+    </div>
+    <div class="status" id="doneStatus"></div>
+  </div>
+
+</div>
+
+<script>
+  /***********************
+   * CONFIG
+   ***********************/
+  // IMPORTANT: keep the URL in quotes
+  const SHEETS_ENDPOINT = "https://script.google.com/macros/s/AKfycbxR6lZ_xXJGLPASqvGT-03UfVIGWNHQvo4vtbx9U4VTTOTl-jRrahbsWwYx5wmMRorH/exec";
+                           
+  // Repeat-submission block key (same study = same key)
+  const STUDY_KEY = "hv_display_study_v1";
+  const SUBMIT_FLAG_KEY = `submitted_${STUDY_KEY}`;
+
+  // Attention check correct response
+  const ATTN_CORRECT = 2;
+
+ 
+const PRODUCTS_NUMERIC = [
+  { id: "A", name: "Earbuds A", attrs: ["11 hrs battery", "120 min charging", "42 g weight", "Noise cancelling: 8/10"] },
+  { id: "B", name: "Earbuds B", attrs: ["8 hrs battery",  "70 min charging",  "32 g weight", "Noise cancelling: 7/10"] },
+  { id: "C", name: "Earbuds C", attrs: ["6 hrs battery",  "55 min charging",  "30 g weight", "Noise cancelling: 7/10"] },
+  { id: "D", name: "Earbuds D", attrs: ["12 hrs battery", "150 min charging", "46 g weight", "Noise cancelling: 8/10"] },
+  { id: "E", name: "Earbuds E", attrs: ["7 hrs battery",  "110 min charging", "38 g weight", "Noise cancelling: 9/10"] }
+];
+
+
+
+const PRODUCTS_TEXT = [
+  { id: "A", name: "Earbuds A", attrs: ["Extended listening focus", "Longer recharge time", "More substantial fit", "Strong noise blocking"] },
+  { id: "B", name: "Earbuds B", attrs: ["Balanced battery use", "Faster recharge", "Lightweight design", "Standard noise reduction"] },
+  { id: "C", name: "Earbuds C", attrs: ["Short-session friendly", "Very fast recharge", "Ultra-light fit", "Standard noise reduction"] },
+  { id: "D", name: "Earbuds D", attrs: ["Maximum battery performance", "Slowest recharge", "Larger fit profile", "Strong noise blocking"] },
+  { id: "E", name: "Earbuds E", attrs: ["Moderate battery use", "Moderate recharge speed", "Medium-weight design", "Best noise blocking"] }
+];
+
+
+
+
+  /***********************
+   * REPEAT SUBMISSION BLOCK (device/browser)
+   ***********************/
+  function checkRepeatSubmission() {
+    try {
+      const flag = localStorage.getItem(SUBMIT_FLAG_KEY);
+      if (flag) {
+        document.getElementById("consentPanel").style.display = "none";
+        document.getElementById("stimuliPanel").style.display = "none";
+        document.getElementById("surveyPanel").style.display = "none";
+        document.getElementById("donePanel").style.display = "none";
+        document.getElementById("repeatBlockPanel").style.display = "block";
+        document.getElementById("repeatStatus").textContent = `Submission record: ${flag}`;
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+  if (false && checkRepeatSubmission()) {
+    // Stop here; no further initialization
+  } else {
+
+    /***********************
+     * STATE
+     ***********************/
+    const sessionId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "_" + Math.random().toString(16).slice(2));
+    const condition = (Math.random() < 0.5) ? "horizontal" : "vertical"; // randomize here (single-link flow)  "vertical" "horizontal"
+    const comparability = (Math.random() < 0.5) ? "numeric" : "text";
+
+    
+
+
+    let pid = "";
+    let deviceNote = "";
+    let choice = null;
+
+    const t0 = performance.now();
+    const nowMs = () => Math.round(performance.now() - t0);
+let t_stimuli_shown_ms = null;
+let t_choice_made_ms = null;
+let t_submit_clicked_ms = null;
+
+
+/***********************
+ * SCROLL TRACKING
+ ***********************/
+const scrollTrack = {
+  // Stimuli (horizontal container) tracking
+  stim_scroll_events: 0,
+  stim_scroll_total_px: 0,
+  stim_scroll_max_left: 0,
+  stim_scroll_time_to_first_ms: null,
+  stim_max_card_seen: null,
+
+  // Page (vertical) scroll tracking
+  page_scroll_events: 0,
+  page_scroll_total_px: 0
+};
+
+// Page scroll (vertical)
+(function initPageScrollTracking() {
+  let lastY = window.scrollY || 0;
+  window.addEventListener("scroll", () => {
+    const y = window.scrollY || 0;
+    const dy = Math.abs(y - lastY);
+    if (dy > 0) {
+      scrollTrack.page_scroll_events += 1;
+      scrollTrack.page_scroll_total_px += dy;
+    }
+    lastY = y;
+  }, { passive: true });
+})();
+
+
+    function makeCompletionCode() {
+      const rand = Math.floor(100000 + Math.random() * 900000);
+      return `HVD-${rand}-${sessionId.slice(0,4).toUpperCase()}`;
+    }
+function attachStimuliScrollTracking(stimEl) {
+  if (!stimEl) return;
+
+  let lastLeft = stimEl.scrollLeft || 0;
+  const startMs = nowMs();
+
+  // Compute which card indices have been seen (rough but effective)
+  function updateMaxCardSeen() {
+    const cards = stimEl.querySelectorAll(".card");
+    if (!cards.length) return;
+
+    const firstCard = cards[0];
+    const cardW = firstCard.getBoundingClientRect().width || 220;
+    const gap = 12; // matches your CSS --gap
+    const step = cardW + gap;
+
+    // Estimate rightmost visible index
+    const rightEdge = (stimEl.scrollLeft || 0) + stimEl.clientWidth;
+    const maxIdx = Math.min(cards.length - 1, Math.floor((rightEdge - 1) / step));
+    scrollTrack.stim_max_card_seen = Math.max(scrollTrack.stim_max_card_seen ?? 0, maxIdx);
+  }
+
+  // Initialize (at least card 0 is seen)
+  scrollTrack.stim_max_card_seen = 0;
+  updateMaxCardSeen();
+
+  stimEl.addEventListener("scroll", () => {
+    const left = stimEl.scrollLeft || 0;
+    const dx = Math.abs(left - lastLeft);
+
+    if (dx > 0) {
+      scrollTrack.stim_scroll_events += 1;
+      scrollTrack.stim_scroll_total_px += dx;
+      scrollTrack.stim_scroll_max_left = Math.max(scrollTrack.stim_scroll_max_left, left);
+
+      if (scrollTrack.stim_scroll_time_to_first_ms === null) {
+        scrollTrack.stim_scroll_time_to_first_ms = nowMs() - startMs;
+      }
+
+      updateMaxCardSeen();
+    }
+
+    lastLeft = left;
+  }, { passive: true });
+}
+
+    /***********************
+     * CONSENT GATE
+     ***********************/
+    const consentCheck = document.getElementById("consentCheck");
+    const pidInput = document.getElementById("pid");
+    const beginBtn = document.getElementById("beginBtn");
+    const consentStatus = document.getElementById("consentStatus");
+
+    function updateBeginEnabled() {
+      const ok = consentCheck.checked && pidInput.value.trim().length > 0;
+      beginBtn.disabled = !ok;
+    }
+    consentCheck.addEventListener("change", updateBeginEnabled);
+    pidInput.addEventListener("input", updateBeginEnabled);
+    updateBeginEnabled();
+
+    beginBtn.addEventListener("click", () => {
+      pid = pidInput.value.trim();
+      deviceNote = document.getElementById("deviceNote").value.trim();
+
+      if (!consentCheck.checked) {
+        consentStatus.textContent = "Please agree to participate to continue.";
+        consentStatus.className = "status error";
+        return;
+      }
+      if (!pid) {
+        consentStatus.textContent = "Please enter your Connect/Participant ID.";
+        consentStatus.className = "status error";
+        return;
+      }
+
+      consentStatus.textContent = "";
+      document.getElementById("consentPanel").style.display = "none";
+      document.getElementById("stimuliPanel").style.display = "block";
+      renderStimuli();
+      document.getElementById("stimuliPanel").scrollIntoView({behavior:"smooth", block:"start"});
+    });
+
+    /***********************
+     * STIMULI RENDER
+     ***********************/
+/***********************
+ * STIMULI RENDER
+ ***********************/
+function cardHTML(p) {
+  return `
+    <article class="card" data-id="${p.id}">
+      <div class="img">${p.id}</div>
+      <div class="meta">
+        <p class="name">${p.name}</p>
+        <ul class="attrs">${(p.attrs || []).map(a => `<li>${a}</li>`).join("")}</ul>
+      </div>
+    </article>
+  `;
+}
+
+function renderStimuli() {
+  t_stimuli_shown_ms = nowMs();
+
+  // choose stimuli based on condition
+  const PRODUCTS = (comparability === "numeric")
+    ? PRODUCTS_NUMERIC
+    : PRODUCTS_TEXT;
+
+  const container = document.getElementById("stimuliContainer");
+  const cls = (condition === "horizontal") ? "stimuliRow" : "stimuliCol";
+
+  // ✅ No legend; just render the stimuli
+  container.innerHTML = `
+    <div class="${cls}" id="stimuli">
+      ${PRODUCTS.map(cardHTML).join("")}
+    </div>
+  `;
+
+  // Attach scroll tracking AFTER the stimuli exist
+  const stimEl = document.getElementById("stimuli");
+  attachStimuliScrollTracking(stimEl);
+
+  // Choice click handlers
+  container.querySelectorAll(".card").forEach(card => {
+    card.addEventListener("click", () => {
+      choice = card.dataset.id;
+      t_choice_made_ms = nowMs(); // time of choice
+
+      document.getElementById("choicePill").textContent = `Choice: ${choice}`;
+      document.getElementById("stimuliStatus").textContent =
+        `Selected ${choice}. Please answer the questions below.`;
+
+      document.getElementById("surveyPanel").style.display = "block";
+      renderLikertsIfNeeded();
+      updateAttnStatus();
+      updateSubmitEnabled();
+      document.getElementById("surveyPanel")
+        .scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+}
+
+
+
+    /***********************
+     * LIKERTS
+     ***********************/
+    const LIKERT_MIN = 1, LIKERT_MAX = 7;
+    let likertsRendered = false;
+
+    function renderLikertsIfNeeded() {
+      if (likertsRendered) return;
+      document.querySelectorAll(".likert").forEach(el => {
+        const q = el.dataset.q;
+        el.innerHTML = "";
+        for (let v = LIKERT_MIN; v <= LIKERT_MAX; v++) {
+          const id = `${q}_${v}`;
+          const wrap = document.createElement("div");
+          wrap.style.display = "grid";
+          wrap.style.justifyItems = "center";
+          wrap.style.gap = "4px";
+
+          const lab = document.createElement("label");
+          lab.setAttribute("for", id);
+          lab.textContent = String(v);
+
+          const inp = document.createElement("input");
+          inp.type = "radio";
+          inp.name = q;
+          inp.id = id;
+          inp.value = String(v);
+
+          inp.addEventListener("change", () => {
+            updateAttnStatus();
+            updateSubmitEnabled();
+          });
+
+          wrap.appendChild(lab);
+          wrap.appendChild(inp);
+          el.appendChild(wrap);
+        }
+      });
+      likertsRendered = true;
+    }
+
+    function getLikertValue(q) {
+      const chosen = document.querySelector(`input[name="${q}"]:checked`);
+      return chosen ? Number(chosen.value) : null;
+    }
+
+    function getLikertResponses() {
+      const out = {};
+      document.querySelectorAll(".likert").forEach(el => {
+        const q = el.dataset.q;
+        out[q] = getLikertValue(q);
+      });
+      return out;
+    }
+
+    function allLikertsAnswered() {
+      const r = getLikertResponses();
+      return Object.values(r).every(v => v !== null);
+    }
+
+    /***********************
+     * ATTENTION CHECK
+     ***********************/
+    const attnStatusEl = document.getElementById("attnStatus");
+
+    function attnPasses() {
+      const v = getLikertValue("attn_check");
+      return v === ATTN_CORRECT;
+    }
+
+  function updateAttnStatus() {
+  // Intentionally silent: we record attention but give no feedback
+  attnStatusEl.textContent = "";
+  attnStatusEl.className = "status";
+}
+
+    /***********************
+     * SUBMIT ENABLE LOGIC
+     ***********************/
+    const submitBtn = document.getElementById("submitBtn");
+    const submitPill = document.getElementById("submitPill");
+    const submitStatus = document.getElementById("submitStatus");
+
+    function updateSubmitEnabled() {
+      submitBtn.disabled = !(choice && allLikertsAnswered());
+    }
+
+    /***********************
+     * SUBMIT
+     ***********************/
+    function buildPayload(completionCode) {
+      const r = getLikertResponses();
+      const attnVal = r.attn_check;
+
+      return {
+        timestamp_iso: new Date().toISOString(),
+        session_id: sessionId,
+        pid,
+        condition,
+        comparability,
+        choice,
+
+        fluency_compare: r.fluency_compare,
+        fluency_straightforward: r.fluency_straightforward,
+        fluency_quick: r.fluency_quick,
+        sat_satisfied: r.sat_satisfied,
+        sat_confident: r.sat_confident,
+
+        attn_check_value: attnVal,
+        attn_check_pass: (attnVal === ATTN_CORRECT),
+
+        comment: (document.getElementById("comment").value || "").trim(),
+        user_agent: navigator.userAgent,
+        viewport_w: window.innerWidth,
+        viewport_h: window.innerHeight,
+        device_note: deviceNote,
+        referrer: (document.getElementById("referrer")?.value || "").trim(),
+        completion_code: completionCode,
+        rt_ms_total: nowMs(),
+        // NEW: process timing variables
+    rt_ms_to_choice: (t_stimuli_shown_ms !== null && t_choice_made_ms !== null)
+      ? (t_choice_made_ms - t_stimuli_shown_ms)
+      : "",
+
+    rt_ms_choice_to_submit: (t_choice_made_ms !== null && t_submit_clicked_ms !== null)
+      ? (t_submit_clicked_ms - t_choice_made_ms)
+      : "",
+
+stim_scroll_events: scrollTrack.stim_scroll_events,
+stim_scroll_total_px: Math.round(scrollTrack.stim_scroll_total_px),
+stim_scroll_max_left: Math.round(scrollTrack.stim_scroll_max_left),
+stim_scroll_time_to_first_ms: scrollTrack.stim_scroll_time_to_first_ms,
+stim_max_card_seen: scrollTrack.stim_max_card_seen,
+
+page_scroll_events: scrollTrack.page_scroll_events,
+page_scroll_total_px: Math.round(scrollTrack.page_scroll_total_px)
+      };
+    }
+
+ async function postToSheets(payload) {
+  // Send as form-encoded to avoid CORS/preflight issues
+  const body = new URLSearchParams({ payload: JSON.stringify(payload) });
+
+  const r = await fetch(SHEETS_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+    body
+  });
+
+  // Apps Script should return JSON like {ok:true} or {ok:false, error:"..."}
+  const text = await r.text().catch(() => "");
+  let parsed = null;
+  try { parsed = JSON.parse(text); } catch {}
+
+  if (!r.ok) return { ok: false, status: r.status, text };
+  if (parsed && parsed.ok === false) return { ok: false, status: r.status, text };
+  return { ok: true, status: r.status, text };
+}
+
+
+
+    function setSubmittedFlag(payload) {
+      const record = JSON.stringify({
+        timestamp_iso: payload.timestamp_iso,
+        pid: payload.pid,
+        completion_code: payload.completion_code,
+        session_id: payload.session_id
+      });
+      localStorage.setItem(SUBMIT_FLAG_KEY, record);
+    }
+
+    submitBtn.addEventListener("click", async () => {
+      if (!(choice && allLikertsAnswered() && attnPasses())) {
+        submitStatus.className = "status error";
+        submitStatus.textContent = "Please answer all items and pass the attention check (select 2).";
+        return;
+      }
+      t_submit_clicked_ms = nowMs();
+      submitBtn.disabled = true;
+      submitPill.textContent = "Submitting…";
+      submitStatus.className = "status";
+      submitStatus.textContent = "Submitting your responses…";
+const completionCode = makeCompletionCode();
+const payload = buildPayload(completionCode);
+
+console.log("PAYLOAD SCROLL:", payload.stim_scroll_events, payload.stim_scroll_total_px, payload.page_scroll_total_px);
+
+if (!SHEETS_ENDPOINT || SHEETS_ENDPOINT.includes("PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE")) {
+  submitPill.textContent = "Error";
+  submitStatus.className = "status error";
+  submitStatus.textContent = "SHEETS_ENDPOINT is not set. Paste your Apps Script Web App URL into the HTML first.";
+  submitBtn.disabled = false;
+  return;
+}
+
+try {
+  const res = await postToSheets(payload);
+
+  if (!res.ok) {
+    submitPill.textContent = "Error";
+    submitStatus.className = "status error";
+    submitStatus.textContent = `Submission failed. Please try again.\n\n${res.text || ""}`;
+    submitBtn.disabled = false;
+    return;
+  }
+
+  // Block repeats ONLY after successful server save
+  try { setSubmittedFlag(payload); } catch(e) {}
+
+  submitPill.textContent = "Submitted";
+  submitStatus.className = "status success";
+  submitStatus.textContent = "Submitted successfully ✅";
+
+  document.getElementById("surveyPanel").style.display = "none";
+  document.getElementById("stimuliPanel").style.display = "none";
+  document.getElementById("donePanel").style.display = "block";
+  document.getElementById("completionCode").textContent = completionCode;
+
+  document.getElementById("donePanel").scrollIntoView({behavior:"smooth", block:"start"});
+
+} catch (e) {
+  submitPill.textContent = "Error";
+  submitStatus.className = "status error";
+  submitStatus.textContent = `Submission failed (network error). Please try again.\n\n${e?.message || e}`;
+  submitBtn.disabled = false;
+}
+
+
+    });
+
+    // Copy code button
+    document.getElementById("copyCodeBtn").addEventListener("click", async () => {
+      const code = document.getElementById("completionCode").textContent;
+      try {
+        await navigator.clipboard.writeText(code);
+        document.getElementById("doneStatus").className = "status success";
+        document.getElementById("doneStatus").textContent = "Copied ✅";
+      } catch {
+        document.getElementById("doneStatus").className = "status";
+        document.getElementById("doneStatus").textContent = "Copy failed — please select and copy manually.";
+      }
+    });
+
+  } // end "not already submitted" branch
+</script>
+</body>
+</html>
